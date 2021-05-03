@@ -46,13 +46,21 @@
     <div class="container">
 		<nav class="navbar navbar-expand-lg navbar-light bg-light">
 			<ul>
-                <strong>Vaccination Centers:</strong> 18+ Only
+                <strong>CoWIN Vaccination Centers:</strong> 
+                <select id="ageLimit" onchange="renderCenters()">
+                    <option value="18">18+ Only</option>
+                    <option value="45">45+ Only</option>                    
+                </select>
             </ul>
             <ul>
-                <strong>State:</strong> Maharashtra
+                <strong>State:</strong>
+                <select id="states_dropdown" onchange="renderCenters()">                    
+                </select>
             </ul>
             <ul>
-                <strong>District:</strong> Pune
+                <strong>District:</strong>
+                <select id="districts_dropdown" onchange="renderCenters()">                    
+                </select>
             </ul>
 		</nav>
 	</div>
@@ -66,10 +74,10 @@
     <script>
 
 
-        async function getCenters() {
+        async function getCenters(districtId) {
             let timestamp = new Date();
             let date = timestamp.getDate() + "-" + (timestamp.getMonth() + 1) + "-" + timestamp.getFullYear();
-            let districtId = 363
+            //let districtId = 363
             let url = 'https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=' + districtId + '&date=' + date;
             try {
                 let res = await fetch(url);
@@ -79,6 +87,25 @@
             }
         }
 
+        async function getStates() {            
+            let url = 'https://cdn-api.co-vin.in/api/v2/admin/location/states';
+            try {
+                let res = await fetch(url);
+                return await res.json();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        async function getDistricts(stateId) {            
+            let url = 'https://cdn-api.co-vin.in/api/v2/admin/location/districts/' + stateId;
+            try {
+                let res = await fetch(url);
+                return await res.json();
+            } catch (error) {
+                console.log(error);
+            }
+        }
 
         function normalizeTable() {
             var table = document.getElementsByTagName('table')[0];
@@ -103,9 +130,9 @@
             for (var i = 0; i < len; i++) {
                 var row = trs[i];
                 var cells = row.getElementsByTagName('td');
-                for (var j = 0; j < cells.length; j++) {
+                for (var j = 1; j < cells.length; j++) {
                     var cell = cells[j];
-                    var value = parseFloat(cell.innerText.trim())
+                    var value = parseInt(cell.innerText.trim())                    
                     if (value > 0) {
                         cell.style.color = 'green';
                         cell.style.backgroundColor = '#cce0c2';
@@ -117,15 +144,68 @@
         }
 
         async function renderCenters() {
-            let centers = await getCenters();
+            
+            
+            let statedropdown = document.getElementById("states_dropdown");
+            let statedropdownIndex = statedropdown.selectedIndex;
+            let states_list = await getStates()
+            if(! statedropdown.isEmptyObject) {
+                statedropdown.options.length = 0;
+            }
+            states_list['states'].forEach(state => {
+                var option = document.createElement("option");
+                option.text = state.state_name;
+
+                option.value = state.state_id;
+                if (statedropdownIndex < 0 && state.state_name == "Maharashtra") {
+                    option.selected = true;
+                } 
+                statedropdown.options.add(option);                
+            });
+            if (statedropdownIndex > 0){
+                statedropdown.selectedIndex = statedropdownIndex;
+            }
+            
+            
+            let stateId = document.getElementById("states_dropdown").value;
+            let districtdropdown = document.getElementById("districts_dropdown");
+            let districtdropdownIndex = districtdropdown.selectedIndex;
+            let districts_list = await getDistricts(stateId);
+            if(! districtdropdown.isEmptyObject) {
+                districtdropdown.options.length = 0;
+            }
+
+            districts_list['districts'].forEach(district => {
+                var option = document.createElement("option");
+                option.text = district.district_name;
+
+                option.value = district.district_id;
+                if (districtdropdownIndex < 0 && district.district_name == "Pune") {
+                    option.selected = true;                  
+                }
+                districtdropdown.options.add(option);                
+            });
+
+            if(districtdropdownIndex > districtdropdown.length) {
+                districtdropdownIndex = 0;
+            }
+            if (districtdropdownIndex > 0){
+                districtdropdown.selectedIndex = districtdropdownIndex;
+            } 
+                        
+            let districtId = document.getElementById("districts_dropdown").value;
+
+            let centers = await getCenters(districtId);
             let arrList = []
             let html = '';
+            let ageLimit = document.getElementById("ageLimit").value;
+            
             centers['centers'].forEach(center => {
                 let entryDict = {}
                 entryDict['Centre'] = `${center.name} - ${center.block_name} - ${center.pincode}`
                 let tmpDict = {}
                 center['sessions'].forEach(session => {
-                    if (session.min_age_limit == 18) {
+                    if (session.min_age_limit == ageLimit) {
                         if (session.available_capacity > 0) {
                             tmpDict[session.date] = session.available_capacity;
                         } else {
@@ -158,6 +238,10 @@
                 rowhtml += '</tr>';
             });
 
+            if(arrList.length <= 0) {
+                rowhtml = `<div class="text-center text-danger w-100 not-available">No centers are available for Vaccination for Age Limit: ${ageLimit}+ Only.</div>`
+            }
+
             html += `<table class="table table-hover table-striped" border="1">
                 <thead class="thead-dark">
                 <tr class="header">`
@@ -171,8 +255,7 @@
                  ${rowhtml}
                  </tbody>
                  </table>`
-
-
+            
             $(".mypanel").html(html);
 
             normalizeTable()
