@@ -125,7 +125,7 @@
                 entryDict['Centre'] = center.name
                 let tmpDict = {}
                 center['sessions'].forEach(session => {
-                    if (session.min_age_limit == 18) {
+                    if (session.min_age_limit == 45) {
                         if (session.available_capacity > 0) {
                             tmpDict[session.date] = session.available_capacity;
                         } else {
