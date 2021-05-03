@@ -122,7 +122,7 @@
             let html = '';
             centers['centers'].forEach(center => {
                 let entryDict = {}
-                entryDict['Centre'] = center.name
+                entryDict['Centre'] = `${center.name} - ${center.block_name} - ${center.pincode}`
                 let tmpDict = {}
                 center['sessions'].forEach(session => {
                     if (session.min_age_limit == 18) {
