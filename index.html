@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Cowin - Vaccine Availability</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 3rem;
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 80%;
+        }
+
+        table {
+            text-align: left;
+            position: relative;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+        }
+
+        tr.header th {
+            background: #517b94;
+            color: white;
+        }
+
+        th {
+            background: white;
+            position: sticky;
+            top: 0;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+		<nav class="navbar navbar-expand-lg navbar-light bg-light">
+			<ul>
+                <strong>Vaccination Centers:</strong> 18 - 44 years
+            </ul>
+            <ul>
+                <strong>State:</strong> Maharashtra
+            </ul>
+            <ul>
+                <strong>District:</strong> Pune
+            </ul>
+		</nav>
+	</div>
+    
+    
+
+    <div class="mypanel">
+
+    </div>
+
+    <script>
+
+
+        async function getCenters() {
+            let timestamp = new Date();
+            let date = timestamp.getDate() + "-" + (timestamp.getMonth() + 1) + "-" + timestamp.getFullYear();
+            let districtId = 363
+            let url = 'https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=' + districtId + '&date=' + date;
+            try {
+                let res = await fetch(url);
+                return await res.json();
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+
+        function normalizeTable() {
+            var table = document.getElementsByTagName('table')[0];
+            var trs = table.getElementsByTagName('tr'),
+                len = trs.length, max = 0, td;
+            // first we search for the longest table row in terms of # of children 
+            for (var i = len; i--;) {
+                if (trs[i].children.length > max)
+                    max = trs[i].children.length;
+            }
+            // now we can fill the other rows
+            for (var j = len; j--;) {
+                while (trs[j].children.length < max) {
+                    td = document.createElement('td');
+                    tdText = document.createTextNode("0");
+                    td.appendChild(tdText);
+                    trs[j].appendChild(td);
+                }
+            }
+
+            // Color greater than zero td        
+            for (var i = 0; i < len; i++) {
+                var row = trs[i];
+                var cells = row.getElementsByTagName('td');
+                for (var j = 0; j < cells.length; j++) {
+                    var cell = cells[j];
+                    var value = parseFloat(cell.innerText.trim())
+                    if (value > 0) {
+                        cell.style.color = 'green';
+                        cell.style.backgroundColor = '#cce0c2';
+                    } else if (value == 0) {
+                        cell.style.color = 'red';
+                    }
+                }
+            }
+        }
+
+        async function renderCenters() {
+            let centers = await getCenters();
+            let arrList = []
+            let html = '';
+            centers['centers'].forEach(center => {
+                let entryDict = {}
+                entryDict['Centre'] = center.name
+                let tmpDict = {}
+                center['sessions'].forEach(session => {
+                    if (session.min_age_limit == 18) {
+                        if (session.available_capacity > 0) {
+                            tmpDict[session.date] = session.available_capacity;
+                        } else {
+                            tmpDict[session.date] = "0"
+                        }
+
+                    }
+                });
+
+                let final_dict = {}
+                if (!jQuery.isEmptyObject(tmpDict)) {
+                    final_dict = Object.assign({}, entryDict, tmpDict);
+                    arrList.push(final_dict);
+                }
+
+            });
+
+
+            let rowhtml = '';
+            let headArr = []
+            arrList.forEach(entry => {
+                rowhtml += '<tr>'
+                for (var key in entry) {
+                    if (!headArr.includes(key)) {
+                        headArr.push(key)
+                    }
+
+                    rowhtml += `<td>${entry[key]}</td>`
+                }
+                rowhtml += '</tr>';
+            });
+
+            html += `<table class="table table-hover table-striped" border="1">
+                <thead class="thead-dark">
+                <tr class="header">`
+
+            headArr.forEach(entry => {
+                html += `<th>${entry}</th>`
+            });
+            html += `</tr>
+                </thead>
+                <tbody>
+                 ${rowhtml}
+                 </tbody>
+                 </table>`
+
+
+            $(".mypanel").html(html);
+
+            normalizeTable()
+        }
+
+
+        renderCenters()
+
+    </script>
+
+</body>
+
+</html>
