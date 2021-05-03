@@ -122,10 +122,10 @@
             let html = '';
             centers['centers'].forEach(center => {
                 let entryDict = {}
-                entryDict['Centre'] = center.name + ' ' center.block_name + ' - ' + center.pincode
+                entryDict['Centre'] = center.name
                 let tmpDict = {}
                 center['sessions'].forEach(session => {
-                    if (session.min_age_limit == 45) {
+                    if (session.min_age_limit == 18) {
                         if (session.available_capacity > 0) {
                             tmpDict[session.date] = session.available_capacity;
                         } else {
