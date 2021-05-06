@@ -76,7 +76,7 @@
 
         async function getCenters(districtId) {
             let timestamp = new Date();
-            let date = timestamp.getDate() + "-" + (timestamp.getMonth() + 1) + "-" + timestamp.getFullYear();
+            let date = (timestamp.getDate() < 10 ? '0' : '') + timestamp.getDate() + "-" + (timestamp.getMonth()  < 10 ? '0' : '') + (timestamp.getMonth() + 1) + "-" + timestamp.getFullYear();
             //let districtId = 363
             let url = 'https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=' + districtId + '&date=' + date;
             try {
